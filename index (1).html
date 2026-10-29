@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Snack Track Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-sized app column, centered on desktop, full-bleed on phones; bottom tab bar switches student dashboard / clubs led */
+:root{
+  --bg:#EEF1EA; --surface:#FFFFFF; --sunk:#E3E8DE; --ink:#1B271F; --muted:#5E6B62; --line:#D3DACE;
+  --green:#2E6A4C; --green-ink:#FFFFFF; --mustard:#E3A51F; --mustard-soft:#FBEFCF; --mustard-ink:#5A3E00;
+  --red:#B5432F; --shadow:0 1px 2px rgba(27,39,31,.06),0 8px 24px rgba(27,39,31,.08);
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121915; --surface:#1A231E; --sunk:#232E27; --ink:#E7EDE6; --muted:#9AA79E; --line:#2E3A32;
+  --green:#5DAE84; --green-ink:#0E1A13; --mustard:#EDB43A; --mustard-soft:#3A2F14; --mustard-ink:#F6D78E;
+  --red:#E07A63; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121915; --surface:#1A231E; --sunk:#232E27; --ink:#E7EDE6; --muted:#9AA79E; --line:#2E3A32;
+  --green:#5DAE84; --green-ink:#0E1A13; --mustard:#EDB43A; --mustard-soft:#3A2F14; --mustard-ink:#F6D78E;
+  --red:#E07A63; --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--body);display:flex;justify-content:center}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--mustard);outline-offset:2px}
+.app{width:100%;max-width:430px;height:100%;display:flex;flex-direction:column;background:var(--bg);position:relative}
+@media (min-width:600px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+.scroll{flex:1;overflow-y:auto;padding:0 16px 24px}
+header.top{padding:18px 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.brand i{width:12px;height:12px;border-radius:50%;background:var(--mustard);display:inline-block;box-shadow:8px 4px 0 -3px var(--mustard)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:24px;font-weight:800} h2{font-size:18px;font-weight:600} h3{font-size:16px;font-weight:600}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--green);color:var(--green-ink);display:grid;place-items:center;font-weight:700;border:0}
+/* chips */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:flex;gap:8px;align-items:center}
+.between{justify-content:space-between}
+select.sort{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:6px 8px;font-size:13px;font-weight:600}
+/* event card */
+.list{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.card{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:14px;display:grid;grid-template-columns:56px 1fr;gap:12px;text-align:left;border:0;width:100%}
+.when{background:var(--sunk);border-radius:12px;text-align:center;padding:8px 2px;font-variant-numeric:tabular-nums;align-self:start}
+.when b{display:block;font-family:var(--display);font-size:18px;line-height:1.1}
+.when span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.card .body{min-width:0;display:flex;flex-direction:column;gap:6px}
+.food{display:inline-flex;align-items:center;gap:6px;background:var(--mustard-soft);color:var(--mustard-ink);border-radius:8px;padding:3px 8px;font-size:12px;font-weight:700;align-self:flex-start}
+.meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--muted)}
+.pill{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;border:1px solid var(--line);color:var(--muted)}
+.pill.members{border-color:var(--green);color:var(--green)}
+.pill.going{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+/* buttons */
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:700;background:var(--green);color:var(--green-ink);width:100%}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.sm{width:auto;padding:8px 12px;font-size:13px;border-radius:10px}
+.btn.mustard{background:var(--mustard);color:#2A1C00}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:12px;width:44px;height:44px;display:grid;place-items:center;flex:none}
+.iconbtn:disabled{opacity:.4;cursor:not-allowed}
+.iconbtn[aria-pressed="true"]{background:var(--mustard);border-color:var(--mustard);color:#2A1C00}
+/* forms */
+form{display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field input,.field textarea,.field select{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;width:100%}
+.field textarea{min-height:76px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two>*{min-width:0}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--sunk);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:9px;font-weight:600;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:var(--shadow)}
+.hint{font-size:12px;color:var(--muted)}
+/* bottom tabs */
+nav.tabs{display:flex;border-top:1px solid var(--line);background:var(--surface);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));overflow-x:auto;scrollbar-width:none}
+nav.tabs button{flex:1 0 auto;min-width:76px;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 8px;font-size:11px;font-weight:600;color:var(--muted);border-radius:10px}
+nav.tabs button[aria-current="page"]{color:var(--ink)}
+nav.tabs button[aria-current="page"] .ic{background:var(--mustard-soft);color:var(--mustard-ink)}
+nav.tabs .ic{width:40px;height:26px;border-radius:999px;display:grid;place-items:center}
+nav.tabs .lead{font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* detail */
+.back{border:0;background:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;padding:12px 0;color:var(--muted)}
+.hero{background:var(--mustard);color:#2A1C00;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.hero h1{color:#2A1C00}
+.earn{background:var(--surface);border:1px dashed var(--mustard);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center}
+.earn b{font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
+.facts{display:flex;flex-direction:column;gap:10px;background:var(--surface);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.facts .row{align-items:flex-start}
+.facts svg{flex:none;color:var(--muted);margin-top:1px}
+.links a{color:var(--green);font-weight:600;word-break:break-word}
+/* club */
+.tag{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600}
+.tag[aria-pressed="true"]{background:var(--mustard-soft);border-color:var(--mustard);color:var(--mustard-ink)}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.why{font-size:12px;font-weight:600;color:var(--green)}
+.clubhead{display:flex;gap:12px;align-items:center;padding:4px 0 12px}
+.badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;color:#fff;flex:none}
+.subtabs{display:flex;gap:4px;background:var(--sunk);border-radius:12px;padding:4px;margin-bottom:14px}
+.subtabs button{flex:1;border:0;background:none;padding:8px;border-radius:9px;font-weight:600;font-size:13px}
+.subtabs button[aria-pressed="true"]{background:var(--surface);box-shadow:var(--shadow)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--surface);border-radius:12px;padding:10px;box-shadow:var(--shadow)}
+.stat b{display:block;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto;background:var(--surface);border-radius:14px;box-shadow:var(--shadow)}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:380px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.empty{text-align:center;padding:28px 12px;color:var(--muted)}
+/* login */
+.login{padding:32px 20px;display:flex;flex-direction:column;gap:22px;flex:1;overflow-y:auto}
+.login .big{font-family:var(--display);font-weight:800;font-size:44px;line-height:1;letter-spacing:-.03em}
+.login .big em{font-style:normal;color:var(--mustard)}
+.proto{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--sunk);color:var(--muted);border-radius:999px;padding:4px 10px;align-self:flex-start}
+/* toast */
+.toast{position:absolute;left:16px;right:16px;bottom:84px;background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 14px;font-weight:600;font-size:14px;transition:opacity .2s,transform .2s}
+.toast[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+const IC = {
+  home:'<svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  flag:'<svg viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+  bell:'<svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  pin:'<svg viewBox="0 0 24 24"><path d="M12 21s7-6 7-12a7 7 0 0 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  users:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>',
+  link:'<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1"/><path d="M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"/></svg>',
+  left:'<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  timer:'<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/></svg>'
+};
+const FOOD = {Pizza:'🍕',Bagels:'🥯',Tacos:'🌮',Dessert:'🍪',Boba:'🧋',Sandwiches:'🥪',Breakfast:'🥞'};
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TODAY = new Date(2026,9,4);
+
+const S = {
+  user:null,
+  screen:'dashboard', tab:'dashboard', eventId:null, clubSub:'events',
+  sort:'time', food:'All',
+  profile:{major:'Environmental Science',year:'Junior',foods:['Tacos','Bagels'],interests:['outdoors','film','sustainability']},
+  clubs:[
+    {id:'outdoors',name:'Outdoors Club',color:'#2E6A4C',leader:true,tags:['outdoors'],majors:['Environmental Science','Kinesiology'],
+     roster:[['Stella Sample','stellasample@college.harvard.edu','(206) 555-0142'],['Maya Chen','mchen@college.harvard.edu','(757) 555-0110'],['Jordan Ruiz','jruiz@college.harvard.edu','(757) 555-0187'],['Priya Nair','pnair@college.harvard.edu','(703) 555-0129']]},
+    {id:'film',name:'Film Society',color:'#7A4E9C',leader:true,tags:['film'],majors:['Film & Media Studies','English'],
+     roster:[['Stella Sample','stellasample@college.harvard.edu','(206) 555-0142'],['Theo Grant','tgrant@college.harvard.edu','(804) 555-0161'],['Ana Lima','alima@college.harvard.edu','(571) 555-0103']]},
+    {id:'debate',name:'Debate Union',color:'#B5432F',leader:false,tags:['speaking'],majors:['Government','Philosophy'],roster:[]},
+    {id:'green',name:'Green Campus',color:'#3D7A8C',leader:false,tags:['sustainability'],majors:['Environmental Science','Biology'],roster:[]},
+    {id:'cs',name:'Coding Collective',color:'#5A5F8C',leader:false,tags:['tech'],majors:['Computer Science','Data Science'],roster:[]},
+    {id:'dance',name:'Salsa Club',color:'#C2622D',leader:false,tags:['dance'],majors:[],roster:[]},
+  ],
+  events:[
+    {id:1,club:'green',title:'Compost Workshop + Lunch',desc:'Learn how the campus compost program works, then eat. We will have veggie and chicken wraps from the deli.',day:0,start:12*60,len:60,loc:'Science Hall 101',walk:6,food:'Sandwiches',item:'a wrap',stay:15,members:false,links:[['Volunteer sign-up form','https://forms.example.edu/green']],going:18,me:false,notify:false},
+    {id:2,club:'outdoors',title:'Spring Trip Interest Meeting',desc:'Hear about the Blue Ridge camping trip and meet the trip leaders. Pizza for everyone who stays for the full pitch.',day:0,start:18*60,len:45,loc:'Student Union Rm 204',walk:4,food:'Pizza',item:'2 slices',stay:20,members:false,links:[['Trip packing list (PDF)','https://example.edu/outdoors/packing.pdf']],going:31,me:true,notify:true},
+    {id:3,club:'debate',title:'Morning Practice Round',desc:'Open practice round. Watch or jump in. Bagels and coffee on the side table.',day:1,start:8*60,len:60,loc:'Library Seminar Rm 3',walk:9,food:'Bagels',item:'a bagel',stay:10,members:false,links:[],going:9,me:false,notify:false},
+    {id:4,club:'film',title:'Members Screening Night',desc:'Monthly members-only screening. Vote on next month’s pick. Boba provided.',day:1,start:20*60,len:120,loc:'Arts Center Theater',walk:12,food:'Boba',item:'a boba',stay:30,members:true,links:[['Vote on next pick','https://forms.example.edu/film-vote']],going:14,me:false,notify:false},
+    {id:5,club:'cs',title:'Hack Night Kickoff',desc:'Team up for a weekend build. Tacos at 7 for anyone who signs a team sheet.',day:2,start:19*60,len:90,loc:'Engineering Atrium',walk:15,food:'Tacos',item:'3 tacos',stay:20,members:false,links:[['Team sheet','https://forms.example.edu/hack']],going:42,me:false,notify:false},
+    {id:6,club:'dance',title:'Beginner Salsa Social',desc:'No partner or experience needed. Cookies after the lesson.',day:3,start:21*60,len:60,loc:'Rec Center Studio B',walk:11,food:'Dessert',item:'cookies',stay:30,members:false,links:[],going:22,me:false,notify:false},
+    {id:7,club:'outdoors',title:'Pancake Trail Cleanup',desc:'Members-only cleanup of the lake trail, then pancakes at the boathouse.',day:5,start:9*60,len:120,loc:'Lake Boathouse',walk:18,food:'Breakfast',item:'a pancake plate',stay:60,members:true,links:[['Waiver','https://forms.example.edu/waiver']],going:11,me:false,notify:false},
+  ],
+  nextId:8, toastT:null
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const club = id => S.clubs.find(c=>c.id===id);
+const fmtTime = m => {const h=Math.floor(m/60),mm=m%60;return `${(h%12)||12}:${String(mm).padStart(2,'0')} ${h<12?'AM':'PM'}`};
+const dayLabel = d => d===0?'Today':d===1?'Tomorrow':DAYS[(TODAY.getDay()+d)%7];
+const dateNum = d => new Date(TODAY.getTime()+d*864e5).getDate();
+const onRoster = (c) => S.user && c.roster.some(r=>r[1].toLowerCase()===S.user.email.toLowerCase());
+const visible = e => !e.members || onRoster(club(e.club));
+const reasons = e => {const c=club(e.club),P=S.profile,r=[];
+  if(P.foods.includes(e.food))r.push(['You like '+e.food,3]);
+  if(c.majors&&c.majors.includes(P.major))r.push(['Popular with '+P.major+' majors',2]);
+  const t=c.tags.find(t=>P.interests.includes(t));if(t)r.push(['Into '+t,2]);
+  if(onRoster(c))r.push(['Your club',2]);
+  return r};
+const relevance = e => reasons(e).reduce((s,x)=>s+x[1],0)+(e.me?1:0);
+
+function toast(msg){const t=$('#toast');if(!t)return;t.textContent=msg;t.hidden=false;clearTimeout(S.toastT);S.toastT=setTimeout(()=>t.hidden=true,2200)}
+
+function render(){
+  const app=$('#app');
+  if(!S.user){app.innerHTML=loginView();bindLogin();return}
+  let main='';
+  if(S.screen==='event') main=eventView();
+  else if(S.screen==='profile') main=profileView();
+  else if(S.tab==='dashboard') main=dashView();
+  else if(S.tab==='new') main=newClubView();
+  else main=clubView(S.tab);
+  app.innerHTML=`<div class="scroll" id="scroll">${main}</div>${tabsView()}<div class="toast" id="toast" role="status" hidden></div>`;
+  bind();
+}
+
+/* ---------- LOGIN ---------- */
+function loginView(){return `
+<div class="login">
+  <div class="brand"><i></i>Snack Track</div>
+  <span class="proto">Prototype · ES30 Assignment 2b</span>
+  <div class="big">Skip the dhall.<br>Find the <em>free food</em>.</div>
+  <p class="muted" style="margin:0">Every club event with food on campus, in one place. Plan your meals around them and meet new people while you’re at it.</p>
+  <form id="loginForm">
+    <div class="field"><label class="label" for="ln">Name</label><input id="ln" required autocomplete="name" placeholder="First and last name"></div>
+    <div class="field"><label class="label" for="le">School email</label><input id="le" type="email" required autocomplete="email" placeholder="you@college.harvard.edu"><span class="hint">Use your .edu address so clubs can match you to their roster.</span></div>
+    <div class="field"><label class="label" for="lp">Phone number</label><input id="lp" type="tel" required autocomplete="tel" placeholder="(555) 555-0100"></div>
+    <button class="btn" type="submit">Log in</button>
+    <span class="hint">This is an early test of Snack Track. We save your name, email and phone so we can follow up about the test.</span>
+  </form>
+</div>`}
+// Paste your Google Apps Script web app URL (ends in /exec) between the quotes.
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbylCJcH_aMEtSK8rM8WAWULUNkRx-gxa9mXDdycCqB8zN3ZY24cfCm6KfHwYfTY0zhPXg/exec';
+function saveSignup(u){
+  if(!SHEET_URL.startsWith('https://')) return;
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({name:u.name,email:u.email,phone:u.phone})}).catch(()=>{});
+}
+function bindLogin(){$('#loginForm').onsubmit=e=>{e.preventDefault();S.user={name:$('#ln').value.trim(),email:$('#le').value.trim(),phone:$('#lp').value.trim()};saveSignup(S.user);render()}}
+
+/* ---------- TABS ---------- */
+function tabsView(){
+  const led=S.clubs.filter(c=>c.leader);
+  const b=(id,icon,label,extra='')=>`<button data-tab="${id}" ${S.tab===id&&S.screen!=='event'||(S.screen==='event'&&id==='dashboard'&&S.tab==='dashboard')?'aria-current="page"':''}><span class="ic">${icon}</span>${esc(label)}${extra}</button>`;
+  return `<nav class="tabs" aria-label="Main">${b('dashboard',IC.home,'Dashboard')}${led.map(c=>b(c.id,`<span style="width:14px;height:14px;border-radius:4px;background:${c.color}"></span>`,c.name.length>12?c.name.split(' ')[0]:c.name,'<span class="lead">Leader</span>')).join('')}${b('new',IC.plus,'New club')}</nav>`;
+}
+
+/* ---------- DASHBOARD ---------- */
+function dashView(){
+  let ev=S.events.filter(visible);
+  if(S.food!=='All') ev=ev.filter(e=>e.food===S.food);
+  const sorters={time:(a,b)=>a.day*1440+a.start-(b.day*1440+b.start),proximity:(a,b)=>a.walk-b.walk,food:(a,b)=>a.food.localeCompare(b.food),relevance:(a,b)=>relevance(b)-relevance(a)||a.day*1440+a.start-(b.day*1440+b.start),stay:(a,b)=>a.stay-b.stay||a.day*1440+a.start-(b.day*1440+b.start)};
+  ev.sort(sorters[S.sort]);
+  const mine=S.events.filter(e=>e.me&&visible(e)).sort(sorters.time);
+  const first=S.user.name.split(' ')[0];
+  return `
+<header class="top" style="padding-inline:0"><div class="brand"><i></i>Snack Track</div><div class="row"><button class="btn ghost sm" id="logoutBtn">Log out</button><button class="avatar" id="profileBtn" aria-label="Your profile">${esc(first[0])}</button></div></header>
+<h1>Hi ${esc(first)}, here’s what’s free this week</h1>
+${mine.length?`<p class="small muted" style="margin:6px 0 14px">You’re going to <b style="color:var(--ink)">${mine.length}</b> ${mine.length===1?'event':'events'}. Next up: ${esc(mine[0].item)} at ${fmtTime(mine[0].start)} ${dayLabel(mine[0].day).toLowerCase()}.</p>`:'<p class="small muted" style="margin:6px 0 14px">Tap an event and hit “I’m going” to plan your meals.</p>'}
+<div class="chips" role="group" aria-label="Food type">${['All',...Object.keys(FOOD)].map(f=>`<button class="chip" data-food="${f}" aria-pressed="${S.food===f}">${f==='All'?'All food':FOOD[f]+' '+f}</button>`).join('')}</div>
+<div class="row between" style="margin:4px 0 2px"><span class="label">${ev.length} events · members & open</span>
+<label class="row small muted" for="sortSel">Sort <select class="sort" id="sortSel">${[['time','Soonest'],['proximity','Closest'],['food','Food type'],['relevance','For you'],['stay','Shortest stay']].map(([v,l])=>`<option value="${v}" ${S.sort===v?'selected':''}>${l}</option>`).join('')}</select></label></div>
+<div class="list">${ev.length?ev.map(cardView).join(''):'<div class="empty">No events with that food this week. Try another filter.</div>'}</div>`;
+}
+function cardView(e){const c=club(e.club);return `
+<button class="card" data-ev="${e.id}">
+  <div class="when"><span>${dayLabel(e.day).slice(0,3)}</span><b>${dateNum(e.day)}</b><span>${fmtTime(e.start).replace(' ','')}</span></div>
+  <div class="body">
+    <span class="food">${FOOD[e.food]} ${esc(e.item)} · stay ${e.stay} min</span>
+    <h3>${esc(e.title)}</h3>
+    ${S.sort==='relevance'&&reasons(e).length?`<span class="why">★ ${reasons(e).map(x=>esc(x[0])).join(' · ')}</span>`:''}
+    <div class="meta"><span>${esc(c.name)}</span><span>${esc(e.loc)} · ${e.walk} min walk</span></div>
+    <div class="row" style="flex-wrap:wrap;gap:6px">${e.members?'<span class="pill members">Members only</span>':'<span class="pill">Open to everyone</span>'}${e.me?'<span class="pill going">You’re going</span>':''}<span class="pill">${e.going} going</span>${e.notify?'<span class="pill">🔔 On</span>':''}</div>
+  </div>
+</button>`}
+
+/* ---------- EVENT DETAIL ---------- */
+function eventView(){const e=S.events.find(x=>x.id===S.eventId),c=club(e.club);return `
+<button class="back" id="backBtn">${IC.left} Back</button>
+<div class="hero">
+  <span class="label" style="color:#5A3E00">${esc(c.name)} · ${e.members?'Members only':'Open to everyone'}</span>
+  <h1>${esc(e.title)}</h1>
+  <div style="font-weight:600">${FOOD[e.food]} ${esc(e.food)}</div>
+</div>
+<div class="earn" style="margin:12px 0">${IC.timer}<div><b>${e.stay} min</b> <span class="small muted">to earn ${esc(e.item)}</span><div class="hint">Check in when you arrive. Food unlocks after you’ve stayed ${e.stay} minutes.</div></div></div>
+<div class="facts">
+  <div class="row">${IC.clock}<div><b>${dayLabel(e.day)}, ${fmtTime(e.start)} – ${fmtTime(e.start+e.len)}</b></div></div>
+  <div class="row">${IC.pin}<div>${esc(e.loc)}<div class="small muted">${e.walk} min walk from you</div></div></div>
+  <div class="row">${IC.users}<div>${e.going+(e.me?0:0)} people going<div class="small muted">You won’t be eating alone.</div></div></div>
+  ${e.desc?`<p style="margin:4px 0 0">${esc(e.desc)}</p>`:''}
+  ${e.links.length?`<div class="links" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"><span class="label">Links</span>${e.links.map(([t,u])=>`<div class="row">${IC.link}<a href="${esc(u)}" target="_blank" rel="noopener">${esc(t)}</a></div>`).join('')}</div>`:''}
+</div>
+<div class="row" style="margin-top:16px">
+  <button class="btn ${e.me?'ghost':''}" id="goBtn">${e.me?'✓ Going · tap to cancel':'I’m going'}</button>
+  <button class="iconbtn" id="notifBtn" aria-pressed="${e.notify}" aria-label="Notifications" ${e.me?'':'disabled'}>${IC.bell}</button>
+</div>
+<p class="hint" style="margin-top:8px">${!e.me?'Notifications turn on once you say you’re going.':e.notify?'You’ll get a reminder 30 minutes before it starts.':'Reminders are off. Tap the bell to turn them back on.'}</p>`}
+
+/* ---------- CLUB (leader) ---------- */
+function clubView(id){const c=club(id);const ev=S.events.filter(e=>e.club===id).sort((a,b)=>a.day*1440+a.start-(b.day*1440+b.start));
+  const total=ev.reduce((s,e)=>s+e.going,0);
+  let body='';
+  if(S.clubSub==='events') body=`
+<div class="stats"><div class="stat"><b>${ev.length}</b><span>Upcoming</span></div><div class="stat"><b>${total}</b><span>RSVPs</span></div><div class="stat"><b>${c.roster.length}</b><span>On roster</span></div></div>
+<div class="list">${ev.length?ev.map(e=>`
+  <div class="card" style="cursor:default"><div class="when"><span>${dayLabel(e.day).slice(0,3)}</span><b>${dateNum(e.day)}</b><span>${fmtTime(e.start).replace(' ','')}</span></div>
+  <div class="body"><span class="food">${FOOD[e.food]} ${esc(e.item)} · stay ${e.stay} min</span><h3>${esc(e.title)}</h3>
+  <div class="meta"><span>${esc(e.loc)}</span><span>${e.going} going</span></div>
+  <div class="row">${e.members?'<span class="pill members">Members only</span>':'<span class="pill">Open to everyone</span>'}</div></div></div>`).join(''):'<div class="empty">No events yet. Post one so students can find you.</div>'}</div>
+<button class="btn mustard" style="margin-top:14px" data-sub="post">Post an event</button>`;
+  else if(S.clubSub==='post') body=postForm(c);
+  else body=rosterView(c);
+  return `
+<div class="clubhead" style="padding-top:18px"><div class="badge" style="background:${c.color}">${esc(c.name[0])}</div><div><span class="label">You lead</span><h1>${esc(c.name)}</h1></div></div>
+<div class="subtabs" role="group">${[['events','Events'],['post','Post event'],['roster','Roster']].map(([v,l])=>`<button data-sub="${v}" aria-pressed="${S.clubSub===v}">${l}</button>`).join('')}</div>
+${body}`}
+
+function postForm(c){return `
+<form id="postForm">
+  <div class="field"><label class="label" for="pt">Event name</label><input id="pt" required placeholder="e.g. Fall Kickoff Social"></div>
+  <div class="field"><label class="label" for="pd">Description</label><textarea id="pd" placeholder="What happens at the event and what food you’re bringing"></textarea></div>
+  <div class="two">
+    <div class="field"><label class="label" for="pday">Day</label><select id="pday">${[0,1,2,3,4,5,6].map(d=>`<option value="${d}">${dayLabel(d)} ${dateNum(d)}</option>`).join('')}</select></div>
+    <div class="field"><label class="label" for="ptime">Start time</label><input id="ptime" type="time" value="18:00" required></div>
+  </div>
+  <div class="two">
+    <div class="field"><label class="label" for="ploc">Location</label><input id="ploc" required placeholder="Building + room"></div>
+    <div class="field"><label class="label" for="plen">Length (min)</label><input id="plen" type="number" min="15" step="15" value="60"></div>
+  </div>
+  <div class="two">
+    <div class="field"><label class="label" for="pfood">Food type</label><select id="pfood">${Object.keys(FOOD).map(f=>`<option>${f}</option>`).join('')}</select></div>
+    <div class="field"><label class="label" for="pitem">Each person gets</label><input id="pitem" placeholder="e.g. a bagel" value="a slice"></div>
+  </div>
+  <div class="field"><label class="label" for="pstay">Time to earn food (min)</label><input id="pstay" type="number" min="0" value="10"><span class="hint">Students must stay this long before they get food. Example: stay 10 min to earn a bagel.</span></div>
+  <div class="field"><span class="label">Who can see it</span><div class="seg" role="group"><button type="button" data-vis="open" aria-pressed="true">Open for everyone</button><button type="button" data-vis="members" aria-pressed="false">Members only</button></div><span class="hint" id="visHint">Shows on every student’s dashboard.</span></div>
+  <div class="field"><label class="label" for="plinks">Additional links</label><textarea id="plinks" placeholder="One per line: Label | https://link&#10;Sign-up form | https://forms.example.edu/…" style="min-height:64px"></textarea><span class="hint">Forms to fill out, PDFs, anything students need.</span></div>
+  <button class="btn" type="submit">Post event</button>
+</form>`}
+
+function rosterView(c){return `
+<p class="small muted" style="margin:0 0 10px">Students on this roster see your members-only events. Matching is by school email.</p>
+<div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead><tbody>
+${c.roster.length?c.roster.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td style="font-variant-numeric:tabular-nums">${esc(r[2])}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">No members yet.</td></tr>'}
+</tbody></table></div>
+<form id="rosterForm" style="margin-top:16px">
+  <span class="label">Add one member</span>
+  <div class="field"><label class="small" for="rn">Name</label><input id="rn" placeholder="Full name"></div>
+  <div class="two"><div class="field"><label class="small" for="re">Email</label><input id="re" type="email" placeholder="name@college.harvard.edu"></div>
+  <div class="field"><label class="small" for="rp">Phone</label><input id="rp" type="tel" placeholder="(555) 555-0100"></div></div>
+  <button class="btn ghost" type="submit">Add member</button>
+</form>
+<form id="pasteForm" style="margin-top:20px">
+  <div class="field"><label class="label" for="rpaste">Upload a roster</label><textarea id="rpaste" placeholder="Paste rows from a spreadsheet:&#10;Name, email, phone&#10;Sam Lee, slee@college.harvard.edu, (757) 555-0199"></textarea><span class="hint">One member per line: name, email, phone.</span></div>
+  <button class="btn ghost" type="submit">Upload roster</button>
+</form>`}
+
+/* ---------- NEW CLUB ---------- */
+function newClubView(){return `
+<div style="padding-top:18px"><span class="label">Start leading a club</span><h1 style="margin-top:4px">Add a club you run</h1>
+<p class="small muted">It gets its own tab at the bottom so you can switch between your dashboard and each club you lead.</p></div>
+<form id="clubForm">
+  <div class="field"><label class="label" for="cn">Club name</label><input id="cn" required placeholder="e.g. Photography Club"></div>
+  <div class="field"><label class="label" for="ct">Interest tag</label><select id="ct">${['outdoors','film','tech','sustainability','dance','speaking','arts','service','cultural'].map(t=>`<option>${t}</option>`).join('')}</select><span class="hint">Helps students who share the interest find you when they sort by “For you.”</span></div>
+  <button class="btn" type="submit">Create club</button>
+</form>`}
+
+
+/* ---------- PROFILE ---------- */
+const MAJORS=['Undeclared','Biology','Business','Computer Science','Data Science','English','Environmental Science','Film & Media Studies','Government','Kinesiology','Philosophy','Psychology'];
+const INTERESTS=['outdoors','film','tech','sustainability','dance','speaking','arts','service','cultural'];
+function profileView(){const P=S.profile,u=S.user;return `
+<button class="back" id="backBtn">${IC.left} Back</button>
+<div class="clubhead"><div class="badge" style="background:var(--green);color:var(--green-ink)">${esc(u.name[0])}</div><div><span class="label">Your profile</span><h1>${esc(u.name)}</h1></div></div>
+<p class="small muted" style="margin:0 0 16px">Your major, favorite foods, and interests shape the “For you” sort on your dashboard.</p>
+<form id="profileForm">
+  <div class="two">
+    <div class="field"><label class="label" for="pmajor">Major</label><select id="pmajor">${MAJORS.map(m=>`<option ${P.major===m?'selected':''}>${m}</option>`).join('')}</select></div>
+    <div class="field"><label class="label" for="pyear">Year</label><select id="pyear">${['First-year','Sophomore','Junior','Senior','Grad'].map(y=>`<option ${P.year===y?'selected':''}>${y}</option>`).join('')}</select></div>
+  </div>
+  <div class="field"><span class="label">Favorite foods</span><div class="tags" role="group" aria-label="Favorite foods">${Object.keys(FOOD).map(f=>`<button type="button" class="tag" data-pfood="${f}" aria-pressed="${P.foods.includes(f)}">${FOOD[f]} ${f}</button>`).join('')}</div></div>
+  <div class="field"><span class="label">Interests</span><div class="tags" role="group" aria-label="Interests">${INTERESTS.map(t=>`<button type="button" class="tag" data-pint="${t}" aria-pressed="${P.interests.includes(t)}">${t}</button>`).join('')}</div></div>
+  <div class="field"><label class="label" for="pname">Name</label><input id="pname" value="${esc(u.name)}"></div>
+  <div class="field"><label class="label" for="pemail">School email</label><input id="pemail" type="email" value="${esc(u.email)}"></div>
+  <div class="field"><label class="label" for="pphone">Phone</label><input id="pphone" type="tel" value="${esc(u.phone)}"></div>
+  <button class="btn" type="submit">Save profile</button>
+</form>`}
+function bindProfile(){const f=$('#profileForm');if(!f)return;
+  const tog=(attr,list)=>document.querySelectorAll(`[${attr}]`).forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
+  tog('data-pfood');tog('data-pint');
+  f.onsubmit=ev=>{ev.preventDefault();
+    S.profile={major:$('#pmajor').value,year:$('#pyear').value,
+      foods:[...document.querySelectorAll('[data-pfood][aria-pressed="true"]')].map(b=>b.dataset.pfood),
+      interests:[...document.querySelectorAll('[data-pint][aria-pressed="true"]')].map(b=>b.dataset.pint)};
+    S.user={name:$('#pname').value.trim()||S.user.name,email:$('#pemail').value.trim()||S.user.email,phone:$('#pphone').value.trim()};
+    S.screen='main';S.tab='dashboard';S.sort='relevance';render();toast('Profile saved. Your dashboard is sorted “For you.”')};
+}
+/* ---------- BINDINGS ---------- */
+function bind(){
+  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;S.screen='main';S.clubSub='events';render();$('#scroll').scrollTop=0});
+  document.querySelectorAll('[data-ev]').forEach(b=>b.onclick=()=>{S.eventId=+b.dataset.ev;S.screen='event';render()});
+  document.querySelectorAll('[data-food]').forEach(b=>b.onclick=()=>{S.food=b.dataset.food;render()});
+  document.querySelectorAll('[data-sub]').forEach(b=>b.onclick=()=>{S.clubSub=b.dataset.sub;render()});
+  const ss=$('#sortSel'); if(ss) ss.onchange=()=>{S.sort=ss.value;render()};
+  const pb=$('#profileBtn'); if(pb) pb.onclick=()=>{S.screen='profile';render();$('#scroll').scrollTop=0};
+  bindProfile();
+  const lo=$('#logoutBtn'); if(lo) lo.onclick=()=>{S.user=null;S.tab='dashboard';S.screen='main';S.clubSub='events';render()};
+  const bk=$('#backBtn'); if(bk) bk.onclick=()=>{S.screen='main';render()};
+  const go=$('#goBtn'); if(go) go.onclick=()=>{const e=S.events.find(x=>x.id===S.eventId);e.me=!e.me;e.going+=e.me?1:-1;e.notify=e.me;render();toast(e.me?'You’re going. Reminder set for 30 min before.':'RSVP cancelled. Notifications off.')};
+  const nb=$('#notifBtn'); if(nb) nb.onclick=()=>{const e=S.events.find(x=>x.id===S.eventId);if(!e.me)return;e.notify=!e.notify;render();toast(e.notify?'Notifications on for this event.':'Notifications off.')};
+  // post form
+  const pf=$('#postForm'); if(pf){
+    let vis='open';
+    document.querySelectorAll('[data-vis]').forEach(b=>b.onclick=()=>{vis=b.dataset.vis;document.querySelectorAll('[data-vis]').forEach(x=>x.setAttribute('aria-pressed',x===b));$('#visHint').textContent=vis==='open'?'Shows on every student’s dashboard.':'Only students on your roster will see it.'});
+    pf.onsubmit=ev=>{ev.preventDefault();const [h,m]=$('#ptime').value.split(':').map(Number);
+      const links=$('#plinks').value.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const p=l.split('|');return p.length>1?[p[0].trim(),p[1].trim()]:[l,l]});
+      S.events.push({id:S.nextId++,club:S.tab,title:$('#pt').value.trim(),desc:$('#pd').value.trim(),day:+$('#pday').value,start:h*60+m,len:+$('#plen').value||60,loc:$('#ploc').value.trim(),walk:Math.floor(Math.random()*14)+3,food:$('#pfood').value,item:$('#pitem').value.trim()||'food',stay:+$('#pstay').value||0,members:vis==='members',links,going:0,me:false,notify:false});
+      S.clubSub='events';render();toast('Event posted. Students can see it on their dashboard now.')};
+  }
+  const rf=$('#rosterForm'); if(rf) rf.onsubmit=ev=>{ev.preventDefault();const n=$('#rn').value.trim(),e=$('#re').value.trim();if(!n||!e){toast('Add a name and email to add a member.');return}club(S.tab).roster.push([n,e,$('#rp').value.trim()]);render();toast(`${n} added to the roster.`)};
+  const pp=$('#pasteForm'); if(pp) pp.onsubmit=ev=>{ev.preventDefault();const rows=$('#rpaste').value.split('\n').map(l=>l.split(/,|\t/).map(s=>s.trim())).filter(r=>r.length>=2&&r[1].includes('@'));if(!rows.length){toast('No rows found. Use: name, email, phone on each line.');return}rows.forEach(r=>club(S.tab).roster.push([r[0],r[1],r[2]||'']));render();toast(`${rows.length} ${rows.length===1?'member':'members'} uploaded.`)};
+  const cf=$('#clubForm'); if(cf) cf.onsubmit=ev=>{ev.preventDefault();const name=$('#cn').value.trim();const id='c'+Date.now();const colors=['#C2622D','#3D7A8C','#7A4E9C','#8C6A2E','#2E6A4C'];
+    S.clubs.push({id,name,color:colors[S.clubs.filter(c=>c.leader).length%colors.length],leader:true,tags:[$('#ct').value],majors:[],roster:[[S.user.name,S.user.email,S.user.phone]]});
+    S.tab=id;S.clubSub='post';render();toast(`${name} created. Post its first event.`)};
+}
+render();
+</script>
+
+</body>
+</html>
