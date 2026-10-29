@@ -102,6 +102,11 @@ svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 .tag{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600}
 .tag[aria-pressed="true"]{background:var(--mustard-soft);border-color:var(--mustard);color:var(--mustard-ink)}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
+.fb{margin-top:28px;background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+@media (max-width:380px){.scale{grid-template-columns:repeat(5,1fr)}}
+.scale button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 0;font-weight:700;font-variant-numeric:tabular-nums}
+.scale button[aria-checked="true"]{background:var(--green);border-color:var(--green);color:var(--green-ink)}
 .why{font-size:12px;font-weight:600;color:var(--green)}
 .clubhead{display:flex;gap:12px;align-items:center;padding:4px 0 12px}
 .badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;color:#fff;flex:none}
@@ -198,6 +203,7 @@ function toast(msg){const t=$('#toast');if(!t)return;t.textContent=msg;t.hidden=
 function render(){
   const app=$('#app');
   if(!S.user){app.innerHTML=loginView();bindLogin();return}
+  if(S.screen==='onboard'){app.innerHTML=`<div class="scroll" id="scroll">${profileView(true)}</div><div class="toast" id="toast" role="status" hidden></div>`;bindProfile(true);return}
   let main='';
   if(S.screen==='event') main=eventView();
   else if(S.screen==='profile') main=profileView();
@@ -225,12 +231,17 @@ function loginView(){return `
 </div>`}
 // Paste your Google Apps Script web app URL (ends in /exec) between the quotes.
 const SHEET_URL = 'https://script.google.com/macros/s/AKfycbylCJcH_aMEtSK8rM8WAWULUNkRx-gxa9mXDdycCqB8zN3ZY24cfCm6KfHwYfTY0zhPXg/exec';
-function saveSignup(u){
+function saveSignup(u,p){
   if(!SHEET_URL.startsWith('https://')) return;
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
-    body:JSON.stringify({name:u.name,email:u.email,phone:u.phone})}).catch(()=>{});
+    body:JSON.stringify({name:u.name,email:u.email,phone:u.phone,major:p.major,year:p.year,foods:p.foods.join(', '),interests:p.interests.join(', ')})}).catch(()=>{});
 }
-function bindLogin(){$('#loginForm').onsubmit=e=>{e.preventDefault();S.user={name:$('#ln').value.trim(),email:$('#le').value.trim(),phone:$('#lp').value.trim()};saveSignup(S.user);render()}}
+function sendFeedback(score,comment){
+  if(!SHEET_URL.startsWith('https://')) return;
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({type:'feedback',name:S.user.name,email:S.user.email,score,comment})}).catch(()=>{});
+}
+function bindLogin(){$('#loginForm').onsubmit=e=>{e.preventDefault();S.user={name:$('#ln').value.trim(),email:$('#le').value.trim(),phone:$('#lp').value.trim()};S.profile={major:'Undeclared',year:'First-year',foods:[],interests:[]};S.screen='onboard';render()}}
 
 /* ---------- TABS ---------- */
 function tabsView(){
@@ -362,10 +373,10 @@ function newClubView(){return `
 /* ---------- PROFILE ---------- */
 const MAJORS=['Undeclared','Biology','Business','Computer Science','Data Science','English','Environmental Science','Film & Media Studies','Government','Kinesiology','Philosophy','Psychology'];
 const INTERESTS=['outdoors','film','tech','sustainability','dance','speaking','arts','service','cultural'];
-function profileView(){const P=S.profile,u=S.user;return `
-<button class="back" id="backBtn">${IC.left} Back</button>
-<div class="clubhead"><div class="badge" style="background:var(--green);color:var(--green-ink)">${esc(u.name[0])}</div><div><span class="label">Your profile</span><h1>${esc(u.name)}</h1></div></div>
-<p class="small muted" style="margin:0 0 16px">Your major, favorite foods, and interests shape the “For you” sort on your dashboard.</p>
+function profileView(onboard){const P=S.profile,u=S.user;return `
+${onboard?'<div class="brand" style="padding-top:18px"><i></i>Snack Track</div>':`<button class="back" id="backBtn">${IC.left} Back</button>`}
+<div class="clubhead"${onboard?' style="padding-top:14px"':''}><div class="badge" style="background:var(--green);color:var(--green-ink)">${esc(u.name[0])}</div><div><span class="label">${onboard?'Step 2 of 2':'Your profile'}</span><h1>${onboard?'Welcome, '+esc(u.name.split(' ')[0])+'! Tell us what you like':esc(u.name)}</h1></div></div>
+<p class="small muted" style="margin:0 0 16px">${onboard?'Pick your major, favorite foods, and interests so we can show the events you’ll like most. You can change these anytime by tapping your initial.':'Your major, favorite foods, and interests shape the “For you” sort on your dashboard.'}</p>
 <form id="profileForm">
   <div class="two">
     <div class="field"><label class="label" for="pmajor">Major</label><select id="pmajor">${MAJORS.map(m=>`<option ${P.major===m?'selected':''}>${m}</option>`).join('')}</select></div>
@@ -373,18 +384,35 @@ function profileView(){const P=S.profile,u=S.user;return `
   </div>
   <div class="field"><span class="label">Favorite foods</span><div class="tags" role="group" aria-label="Favorite foods">${Object.keys(FOOD).map(f=>`<button type="button" class="tag" data-pfood="${f}" aria-pressed="${P.foods.includes(f)}">${FOOD[f]} ${f}</button>`).join('')}</div></div>
   <div class="field"><span class="label">Interests</span><div class="tags" role="group" aria-label="Interests">${INTERESTS.map(t=>`<button type="button" class="tag" data-pint="${t}" aria-pressed="${P.interests.includes(t)}">${t}</button>`).join('')}</div></div>
-  <div class="field"><label class="label" for="pname">Name</label><input id="pname" value="${esc(u.name)}"></div>
+  ${onboard?'':`<div class="field"><label class="label" for="pname">Name</label><input id="pname" value="${esc(u.name)}"></div>
   <div class="field"><label class="label" for="pemail">School email</label><input id="pemail" type="email" value="${esc(u.email)}"></div>
-  <div class="field"><label class="label" for="pphone">Phone</label><input id="pphone" type="tel" value="${esc(u.phone)}"></div>
-  <button class="btn" type="submit">Save profile</button>
-</form>`}
-function bindProfile(){const f=$('#profileForm');if(!f)return;
+  <div class="field"><label class="label" for="pphone">Phone</label><input id="pphone" type="tel" value="${esc(u.phone)}"></div>`}
+  <button class="btn" type="submit">${onboard?'Start finding food':'Save profile'}</button>
+  ${onboard?'<button class="btn ghost" type="button" id="skipBtn">Skip for now</button>':''}
+</form>
+${onboard?'':`<form id="feedbackForm" class="fb">
+  <div><span class="label">Feedback for the Snack Track team</span><h2 style="margin-top:4px">Would you use this?</h2></div>
+  <div class="field"><span class="small muted" id="fbq">On a scale of 1 to 10, how likely are you to use Snack Track?</span>
+    <div class="scale" role="radiogroup" aria-labelledby="fbq">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" role="radio" aria-checked="false" data-score="${n}">${n}</button>`).join('')}</div>
+    <div class="row between hint"><span>Not at all</span><span>Definitely</span></div></div>
+  <div class="field"><label class="label" for="fbtext">Anything else? (optional)</label><textarea id="fbtext" placeholder="What would make you use it more? What’s confusing?"></textarea></div>
+  <button class="btn mustard" type="submit">Send feedback</button>
+</form>`}`}
+function bindProfile(onboard){const f=$('#profileForm');if(!f)return;
+  const finish=(prefs)=>{S.screen='main';S.tab='dashboard';S.sort=prefs?'relevance':'time';render();saveSignup(S.user,S.profile);toast(prefs?'You’re all set. Your dashboard is sorted “For you.”':'Skipped. You can set preferences anytime from your profile.')};
+  const sk=$('#skipBtn');if(sk)sk.onclick=()=>finish(false);
+  const fb=$('#feedbackForm');if(fb){let score=0;
+    document.querySelectorAll('[data-score]').forEach(b=>b.onclick=()=>{score=+b.dataset.score;document.querySelectorAll('[data-score]').forEach(x=>x.setAttribute('aria-checked',x===b))});
+    fb.onsubmit=ev=>{ev.preventDefault();if(!score){toast('Pick a number from 1 to 10 first.');return}
+      sendFeedback(score,$('#fbtext').value.trim());
+      fb.innerHTML='<span class="label">Feedback for the Snack Track team</span><h2>Thanks! We got your feedback.</h2><p class="small muted" style="margin:0">You rated Snack Track '+score+' out of 10.</p>'}}
   const tog=(attr,list)=>document.querySelectorAll(`[${attr}]`).forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
   tog('data-pfood');tog('data-pint');
   f.onsubmit=ev=>{ev.preventDefault();
     S.profile={major:$('#pmajor').value,year:$('#pyear').value,
       foods:[...document.querySelectorAll('[data-pfood][aria-pressed="true"]')].map(b=>b.dataset.pfood),
       interests:[...document.querySelectorAll('[data-pint][aria-pressed="true"]')].map(b=>b.dataset.pint)};
+    if(onboard){finish(true);return}
     S.user={name:$('#pname').value.trim()||S.user.name,email:$('#pemail').value.trim()||S.user.email,phone:$('#pphone').value.trim()};
     S.screen='main';S.tab='dashboard';S.sort='relevance';render();toast('Profile saved. Your dashboard is sorted “For you.”')};
 }
