@@ -41,7 +41,7 @@ h1{font-size:24px;font-weight:800} h2{font-size:18px;font-weight:600} h3{font-si
 .muted{color:var(--muted)}
 .small{font-size:13px}
 .label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.avatar{width:36px;height:36px;border-radius:50%;background:var(--green);color:var(--green-ink);display:grid;place-items:center;font-weight:700;border:0}
+.avatar{position:relative;width:36px;height:36px;border-radius:50%;background:var(--green);color:var(--green-ink);display:grid;place-items:center;font-weight:700;border:0}
 /* chips */
 .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scrollbar-width:none}
 .chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600}
@@ -102,11 +102,12 @@ svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-l
 .tag{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600}
 .tag[aria-pressed="true"]{background:var(--mustard-soft);border-color:var(--mustard);color:var(--mustard-ink)}
 .tags{display:flex;flex-wrap:wrap;gap:8px}
-.fb{margin-top:28px;background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+.fb{margin-bottom:24px;background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
 .scale{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
 @media (max-width:380px){.scale{grid-template-columns:repeat(5,1fr)}}
 .scale button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 0;font-weight:700;font-variant-numeric:tabular-nums}
 .scale button[aria-checked="true"]{background:var(--green);border-color:var(--green);color:var(--green-ink)}
+.dot{position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--red);color:#fff;font-size:11px;font-weight:700;line-height:18px;border:2px solid var(--bg)}
 .why{font-size:12px;font-weight:600;color:var(--green)}
 .clubhead{display:flex;gap:12px;align-items:center;padding:4px 0 12px}
 .badge{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:20px;color:#fff;flex:none}
@@ -192,7 +193,7 @@ const onRoster = (c) => S.user && c.roster.some(r=>r[1].toLowerCase()===S.user.e
 const visible = e => !e.members || onRoster(club(e.club));
 const reasons = e => {const c=club(e.club),P=S.profile,r=[];
   if(P.foods.includes(e.food))r.push(['You like '+e.food,3]);
-  if(c.majors&&c.majors.includes(P.major))r.push(['Popular with '+P.major+' majors',2]);
+  const mj=(P.major||'').trim().toLowerCase();if(mj&&c.majors&&c.majors.some(m=>m.toLowerCase()===mj))r.push(['Popular with '+esc(P.major.trim())+' majors',2]);
   const t=c.tags.find(t=>P.interests.includes(t));if(t)r.push(['Into '+t,2]);
   if(onRoster(c))r.push(['Your club',2]);
   return r};
@@ -241,7 +242,7 @@ function sendFeedback(score,comment){
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify({type:'feedback',name:S.user.name,email:S.user.email,score,comment})}).catch(()=>{});
 }
-function bindLogin(){$('#loginForm').onsubmit=e=>{e.preventDefault();S.user={name:$('#ln').value.trim(),email:$('#le').value.trim(),phone:$('#lp').value.trim()};S.profile={major:'Undeclared',year:'First-year',foods:[],interests:[]};S.screen='onboard';render()}}
+function bindLogin(){$('#loginForm').onsubmit=e=>{e.preventDefault();S.user={name:$('#ln').value.trim(),email:$('#le').value.trim(),phone:$('#lp').value.trim()};S.profile={major:'',year:'First-year',foods:[],interests:[]};S.screen='onboard';render()}}
 
 /* ---------- TABS ---------- */
 function tabsView(){
@@ -259,7 +260,7 @@ function dashView(){
   const mine=S.events.filter(e=>e.me&&visible(e)).sort(sorters.time);
   const first=S.user.name.split(' ')[0];
   return `
-<header class="top" style="padding-inline:0"><div class="brand"><i></i>Snack Track</div><div class="row"><button class="btn ghost sm" id="logoutBtn">Log out</button><button class="avatar" id="profileBtn" aria-label="Your profile">${esc(first[0])}</button></div></header>
+<header class="top" style="padding-inline:0"><div class="brand"><i></i>Snack Track</div><div class="row"><button class="btn ghost sm" id="logoutBtn">Log out</button><button class="avatar" id="profileBtn" aria-label="${S.feedbackScore?'Your profile':'Your profile, 1 new: give feedback'}">${esc(first[0])}${S.feedbackScore?'':'<span class="dot" aria-hidden="true">1</span>'}</button></div></header>
 <h1>Hi ${esc(first)}, here’s what’s free this week</h1>
 ${mine.length?`<p class="small muted" style="margin:6px 0 14px">You’re going to <b style="color:var(--ink)">${mine.length}</b> ${mine.length===1?'event':'events'}. Next up: ${esc(mine[0].item)} at ${fmtTime(mine[0].start)} ${dayLabel(mine[0].day).toLowerCase()}.</p>`:'<p class="small muted" style="margin:6px 0 14px">Tap an event and hit “I’m going” to plan your meals.</p>'}
 <div class="chips" role="group" aria-label="Food type">${['All',...Object.keys(FOOD)].map(f=>`<button class="chip" data-food="${f}" aria-pressed="${S.food===f}">${f==='All'?'All food':FOOD[f]+' '+f}</button>`).join('')}</div>
@@ -365,7 +366,7 @@ function newClubView(){return `
 <p class="small muted">It gets its own tab at the bottom so you can switch between your dashboard and each club you lead.</p></div>
 <form id="clubForm">
   <div class="field"><label class="label" for="cn">Club name</label><input id="cn" required placeholder="e.g. Photography Club"></div>
-  <div class="field"><label class="label" for="ct">Interest tag</label><select id="ct">${['outdoors','film','tech','sustainability','dance','speaking','arts','service','cultural'].map(t=>`<option>${t}</option>`).join('')}</select><span class="hint">Helps students who share the interest find you when they sort by “For you.”</span></div>
+  <div class="field"><label class="label" for="ct">Interest tag</label><input id="ct" list="tagList" autocomplete="off" placeholder="e.g. photography"><datalist id="tagList">${['outdoors','film','tech','sustainability','dance','speaking','arts','service','cultural'].map(t=>`<option value="${t}"></option>`).join('')}</datalist><span class="hint">Helps students who share the interest find you when they sort by “For you.”</span></div>
   <button class="btn" type="submit">Create club</button>
 </form>`}
 
@@ -377,9 +378,17 @@ function profileView(onboard){const P=S.profile,u=S.user;return `
 ${onboard?'<div class="brand" style="padding-top:18px"><i></i>Snack Track</div>':`<button class="back" id="backBtn">${IC.left} Back</button>`}
 <div class="clubhead"${onboard?' style="padding-top:14px"':''}><div class="badge" style="background:var(--green);color:var(--green-ink)">${esc(u.name[0])}</div><div><span class="label">${onboard?'Step 2 of 2':'Your profile'}</span><h1>${onboard?'Welcome, '+esc(u.name.split(' ')[0])+'! Tell us what you like':esc(u.name)}</h1></div></div>
 <p class="small muted" style="margin:0 0 16px">${onboard?'Pick your major, favorite foods, and interests so we can show the events you’ll like most. You can change these anytime by tapping your initial.':'Your major, favorite foods, and interests shape the “For you” sort on your dashboard.'}</p>
+${onboard?'':S.feedbackScore?`<div class="fb"><span class="label">Feedback for the Snack Track team</span><h2>Thanks! We got your feedback.</h2><p class="small muted" style="margin:0">You rated Snack Track ${S.feedbackScore} out of 10.</p></div>`:`<form id="feedbackForm" class="fb">
+  <div><span class="label">Feedback for the Snack Track team</span><h2 style="margin-top:4px">Would you use this?</h2></div>
+  <div class="field"><span class="small muted" id="fbq">On a scale of 1 to 10, how likely are you to use Snack Track?</span>
+    <div class="scale" role="radiogroup" aria-labelledby="fbq">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" role="radio" aria-checked="false" data-score="${n}">${n}</button>`).join('')}</div>
+    <div class="row between hint"><span>Not at all</span><span>Definitely</span></div></div>
+  <div class="field"><label class="label" for="fbtext">Anything else? (optional)</label><textarea id="fbtext" placeholder="What would make you use it more? What’s confusing?"></textarea></div>
+  <button class="btn mustard" type="submit">Send feedback</button>
+</form>`}
 <form id="profileForm">
   <div class="two">
-    <div class="field"><label class="label" for="pmajor">Major</label><select id="pmajor">${MAJORS.map(m=>`<option ${P.major===m?'selected':''}>${m}</option>`).join('')}</select></div>
+    <div class="field"><label class="label" for="pmajor">Major</label><input id="pmajor" list="majorList" autocomplete="off" placeholder="Type your major" value="${esc(P.major||'')}"><datalist id="majorList">${MAJORS.map(m=>`<option value="${m}"></option>`).join('')}</datalist></div>
     <div class="field"><label class="label" for="pyear">Year</label><select id="pyear">${['First-year','Sophomore','Junior','Senior','Grad'].map(y=>`<option ${P.year===y?'selected':''}>${y}</option>`).join('')}</select></div>
   </div>
   <div class="field"><span class="label">Favorite foods</span><div class="tags" role="group" aria-label="Favorite foods">${Object.keys(FOOD).map(f=>`<button type="button" class="tag" data-pfood="${f}" aria-pressed="${P.foods.includes(f)}">${FOOD[f]} ${f}</button>`).join('')}</div></div>
@@ -389,27 +398,18 @@ ${onboard?'<div class="brand" style="padding-top:18px"><i></i>Snack Track</div>'
   <div class="field"><label class="label" for="pphone">Phone</label><input id="pphone" type="tel" value="${esc(u.phone)}"></div>`}
   <button class="btn" type="submit">${onboard?'Start finding food':'Save profile'}</button>
   ${onboard?'<button class="btn ghost" type="button" id="skipBtn">Skip for now</button>':''}
-</form>
-${onboard?'':`<form id="feedbackForm" class="fb">
-  <div><span class="label">Feedback for the Snack Track team</span><h2 style="margin-top:4px">Would you use this?</h2></div>
-  <div class="field"><span class="small muted" id="fbq">On a scale of 1 to 10, how likely are you to use Snack Track?</span>
-    <div class="scale" role="radiogroup" aria-labelledby="fbq">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" role="radio" aria-checked="false" data-score="${n}">${n}</button>`).join('')}</div>
-    <div class="row between hint"><span>Not at all</span><span>Definitely</span></div></div>
-  <div class="field"><label class="label" for="fbtext">Anything else? (optional)</label><textarea id="fbtext" placeholder="What would make you use it more? What’s confusing?"></textarea></div>
-  <button class="btn mustard" type="submit">Send feedback</button>
-</form>`}`}
+</form>`}
 function bindProfile(onboard){const f=$('#profileForm');if(!f)return;
   const finish=(prefs)=>{S.screen='main';S.tab='dashboard';S.sort=prefs?'relevance':'time';render();saveSignup(S.user,S.profile);toast(prefs?'You’re all set. Your dashboard is sorted “For you.”':'Skipped. You can set preferences anytime from your profile.')};
   const sk=$('#skipBtn');if(sk)sk.onclick=()=>finish(false);
   const fb=$('#feedbackForm');if(fb){let score=0;
     document.querySelectorAll('[data-score]').forEach(b=>b.onclick=()=>{score=+b.dataset.score;document.querySelectorAll('[data-score]').forEach(x=>x.setAttribute('aria-checked',x===b))});
     fb.onsubmit=ev=>{ev.preventDefault();if(!score){toast('Pick a number from 1 to 10 first.');return}
-      sendFeedback(score,$('#fbtext').value.trim());
-      fb.innerHTML='<span class="label">Feedback for the Snack Track team</span><h2>Thanks! We got your feedback.</h2><p class="small muted" style="margin:0">You rated Snack Track '+score+' out of 10.</p>'}}
+      sendFeedback(score,$('#fbtext').value.trim());S.feedbackScore=score;render();$('#scroll').scrollTop=0;toast('Thanks! Your feedback was sent.')}}
   const tog=(attr,list)=>document.querySelectorAll(`[${attr}]`).forEach(b=>b.onclick=()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true'));
   tog('data-pfood');tog('data-pint');
   f.onsubmit=ev=>{ev.preventDefault();
-    S.profile={major:$('#pmajor').value,year:$('#pyear').value,
+    S.profile={major:$('#pmajor').value.trim(),year:$('#pyear').value,
       foods:[...document.querySelectorAll('[data-pfood][aria-pressed="true"]')].map(b=>b.dataset.pfood),
       interests:[...document.querySelectorAll('[data-pint][aria-pressed="true"]')].map(b=>b.dataset.pint)};
     if(onboard){finish(true);return}
@@ -441,7 +441,7 @@ function bind(){
   const rf=$('#rosterForm'); if(rf) rf.onsubmit=ev=>{ev.preventDefault();const n=$('#rn').value.trim(),e=$('#re').value.trim();if(!n||!e){toast('Add a name and email to add a member.');return}club(S.tab).roster.push([n,e,$('#rp').value.trim()]);render();toast(`${n} added to the roster.`)};
   const pp=$('#pasteForm'); if(pp) pp.onsubmit=ev=>{ev.preventDefault();const rows=$('#rpaste').value.split('\n').map(l=>l.split(/,|\t/).map(s=>s.trim())).filter(r=>r.length>=2&&r[1].includes('@'));if(!rows.length){toast('No rows found. Use: name, email, phone on each line.');return}rows.forEach(r=>club(S.tab).roster.push([r[0],r[1],r[2]||'']));render();toast(`${rows.length} ${rows.length===1?'member':'members'} uploaded.`)};
   const cf=$('#clubForm'); if(cf) cf.onsubmit=ev=>{ev.preventDefault();const name=$('#cn').value.trim();const id='c'+Date.now();const colors=['#C2622D','#3D7A8C','#7A4E9C','#8C6A2E','#2E6A4C'];
-    S.clubs.push({id,name,color:colors[S.clubs.filter(c=>c.leader).length%colors.length],leader:true,tags:[$('#ct').value],majors:[],roster:[[S.user.name,S.user.email,S.user.phone]]});
+    S.clubs.push({id,name,color:colors[S.clubs.filter(c=>c.leader).length%colors.length],leader:true,tags:$('#ct').value.trim()?[$('#ct').value.trim().toLowerCase()]:[],majors:[],roster:[[S.user.name,S.user.email,S.user.phone]]});
     S.tab=id;S.clubSub='post';render();toast(`${name} created. Post its first event.`)};
 }
 render();
